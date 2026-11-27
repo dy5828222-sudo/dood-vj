@@ -13,7 +13,7 @@ Versi HTML + optimasi trafik: Edge Cache, Stale-While-Revalidate, KV opsional, b
 | **Search hemat** | Hingga 8 variasi query dijalankan paralel (default 6) |
 | **Fallback provider** | Detail video mencoba DoodStream, lalu LuluStream jika tidak ditemukan |
 | **CPU hemat** | Relevance tanpa Levenshtein berat |
-| **Inline CSS** | CSS utama dimuat langsung di `<head>` untuk mengurangi satu request |
+| **Inline assets** | CSS di `<head>` dan JavaScript di akhir halaman untuk mengurangi request aset |
 | **TTL panjang** | List 6j, Search 24j, Video 7 hari (+ SWR lebih lama) |
 
 ## Struktur

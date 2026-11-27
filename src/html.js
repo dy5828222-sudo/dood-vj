@@ -1,7 +1,7 @@
 /**
  * Vidpro Layout (presisi) — templates for AGC Cloudflare Pages
  */
-import { APP_CSS, JS_PATH } from "./assets.js";
+import { APP_CSS, APP_JS } from "./assets.js";
 
 export function escapeHtml(str) {
   return String(str ?? "")
@@ -358,7 +358,7 @@ export function layout({
     <span class="material-symbols-outlined">keyboard_arrow_up</span>
   </button>
 
-  <script src="${JS_PATH}" defer></script>
+  <script>${APP_JS}</script>
 </body>
 </html>`;
 }
@@ -502,7 +502,6 @@ export function detailSection({
   const srcsetAttr = safeCoverSrcset ? ` srcset="${safeCoverSrcset}" sizes="${coverSizes}"` : "";
   const playCover = safeCover
     ? `<div class="custom-cover-overlay" id="${playerId}-cover" role="button" tabindex="0" aria-label="Putar video" data-embed="${safeEmbed}" data-player="${playerId}" onclick="playEmbed(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();playEmbed(this);}">
-        <img class="custom-cover-backdrop" src="${safeCover}" alt="" aria-hidden="true" decoding="async" onerror="${coverOnErr}">
         <img class="custom-cover-img" src="${safeCover}"${srcsetAttr} alt="${safeTitle}" width="640" height="360" fetchpriority="high" decoding="async" onerror="${coverOnErr}">
         <div class="custom-play-center">${PLAY_SVG}</div>
       </div>`
