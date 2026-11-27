@@ -75,6 +75,8 @@ Tanpa KV pun tetap jalan (hanya Edge Cache). Dengan KV, cache search/detail bert
 
 Atur `SITE_NAME` dan `SITE_TAGLINE` di `.env` untuk development lokal, lalu jalankan `npx wrangler pages dev .`:
 
+Gunakan `.env.example` sebagai template konfigurasi tanpa kredensial. Gabungkan nilainya ke `.env` lokal; jangan commit `.env`.
+
 ```env
 SITE_NAME=Nama situs
 SITE_TAGLINE=Tagline situs

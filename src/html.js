@@ -95,7 +95,7 @@ export function layout({
   const logoRest = escapeHtml(parts.slice(1).join(" "));
   const year = new Date().getFullYear();
 
-  const cats = ["Viral", "TikTok", "Indo", "Asupan", "SMA", "Live", "Twitter"];
+  const cats = ["Video Viral", "Video TikTok", "Video Indo", "Video Asupan", "Video Lokal", "Video Jepang", "Twitter"];
 
   const appleIconUrl = `${base || ""}/apple-touch-icon.png`;
   const defaultImage = appleIconUrl;

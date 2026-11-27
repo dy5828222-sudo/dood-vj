@@ -140,7 +140,7 @@ export class AGC {
     let words = t ? t.split(/\s+/).filter(Boolean) : [];
 
     // Filter kata terlalu pendek / tidak bermakna
-    const stopShort = new Set(["a", "i", "u", "e", "o", "yg", "dan", "atau", "yang", "di", "ke", "dari"]);
+    const stopShort = new Set(["a", "i", "u", "e", "o", "yg"]);
     words = words.filter((w) => w.length > 1 && !stopShort.has(w.toLowerCase()));
 
     // Jika setelah dibersihkan kosong / terlalu sedikit kata → pakai fallback SEO kuat
@@ -197,11 +197,11 @@ export class AGC {
   _seoWords(count = 5, seed = "") {
     // Pool kata SEO yang relevan (single word biar rapi saat di-join)
     const pool = [
-      "Viral", "TikTok", "Streaming", "Full", "Hd", "Terbaru",
+      "Viral", "TikTok", "Streaming", "Full Hd", "Lulustream", "Terbaru",
       "Indo", "Simontok", "Doodstream", "Lulustream", "Asupan",
-      "Video", "Hot", "Trending", "Sotwe", "Nonton", "Gratis",
-      "Update", "Baru", "Populer", "Fyp", "Reels", "Short",
-      "Premium", "No", "Sensor", "Durasi", "Panjang", "Quality",
+      "Video", "Nonton", "Trending", "Sotwe", "Nonton", "Gratis",
+      "Update", "Baru", "Populer", "Fyp", "Skandal", "Dood",
+      "Premium", "Videy", "No Sensor", "Durasi Panjang", "Full Album", "Quality",
     ];
     if (count <= 0) return [];
 
@@ -331,7 +331,7 @@ export class AGC {
           uploaded_timestamp: ts,
           relevance,
           channel: "DoodStream",
-          api_source: "doodapi",
+          api_source: "DoodStream",
         });
       }
     }
@@ -394,7 +394,7 @@ export class AGC {
       protected_dl: `https://doodstream.com/d/${fid}`,
       watch_url: `https://dodl.pages.dev/${fid}`,
       download_url: `https://doodstream.com/d/${fid}`,
-      api_source: "doodapi",
+      api_source: "DoodStream",
       channel: "DoodStream",
       uploaded: item.uploaded || "",
     };
@@ -430,7 +430,7 @@ export class AGC {
       watch_url: `https://luvluv.pages.dev/${fid}`,
       download_url: `https://lulustream.com/d/${fid}`,
       api_source: "lulustream",
-      channel: "LuluStream",
+      channel: "lulustream",
       uploaded: item.file_created || "",
     };
   }
