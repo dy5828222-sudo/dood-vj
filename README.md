@@ -10,7 +10,8 @@ Versi HTML + optimasi trafik: Edge Cache, Stale-While-Revalidate, KV opsional, b
 | **SWR** | `stale-while-revalidate` — user tetap dapat response saat refresh |
 | **KV Cache** | Opsional binding `AGC2_CACHE` — cache global search/detail/list |
 | **Fallback error** | Jika API luar error, serve stale dari edge cache |
-| **Subrequest hemat** | Max 3 search variation, Dood dulu baru Lulu |
+| **Search hemat** | Hingga 8 variasi query dijalankan paralel (default 6) |
+| **Fallback provider** | Detail video mencoba DoodStream, lalu LuluStream jika tidak ditemukan |
 | **CPU hemat** | Relevance tanpa Levenshtein berat |
 | **TTL panjang** | List 6j, Search 24j, Video 7 hari (+ SWR lebih lama) |
 
@@ -19,9 +20,11 @@ Versi HTML + optimasi trafik: Edge Cache, Stale-While-Revalidate, KV opsional, b
 ├── _worker.js
 ├── src/
 │   ├── agc.js
+│   ├── assets.js
 │   ├── cache.js      # Edge + KV helpers
 │   ├── config.js
-│   └── helpers.js
+│   ├── helpers.js
+│   └── html.js
 └── README.md
 ```
 
@@ -43,20 +46,32 @@ npx wrangler pages deploy . --project-name=agc-html
 
 Tanpa KV pun tetap jalan (hanya Edge Cache). Dengan KV, cache search/detail bertahan lintas PoP dan lebih tahan spike.
 
-## Environment Variables (opsional)
+## Environment Variables
 
 | Variable | Default | Keterangan |
 |----------|---------|------------|
 | `SITE_NAME` | Simontok 2026 | Nama situs |
-| `API_ACCESS_KEY` | (kosong) | Kunci akses |
-| `DOOD_API_KEY` | (kosong) | API Doodstream — set sebagai secret |
-| `LULU_API_KEY` | (kosong) | API Lulustream — set sebagai secret |
-| `CACHE_LIST` | 21600 | TTL list (detik) |
-| `CACHE_SEARCH` | 86400 | TTL search |
-| `CACHE_VIDEO` | 604800 | TTL detail video |
-| `PER_PAGE` | 20 | Item per halaman |
-| `MAX_SEARCH_VARIATIONS` | 3 | Max parallel search query |
-| `API_TIMEOUT_MS` | 8000 | Timeout fetch API luar |
+| `SITE_TAGLINE` | `Streaming Video Viral Indo TikTok Download Link` | Tagline situs |
+| `LANGUAGE` | `id` | Bahasa untuk metadata dan saran pencarian |
+| `SITE_URL` | (kosong) | URL kanonis; jika kosong, gunakan `BASE_URL` |
+| `BASE_URL` | (kosong) | Fallback URL kanonis |
+| `API_ACCESS_KEY` | (kosong) | Kunci akses opsional |
+| `ALLOWED_ORIGIN` | `*` | Origin CORS yang diizinkan |
+| `DOOD_API_KEY` | (kosong) | API DoodStream — simpan sebagai secret |
+| `LULU_API_KEY` | (kosong) | API LuluStream — simpan sebagai secret |
+| `CACHE_LIST` | `21600` | TTL cache daftar (detik) |
+| `CACHE_LIST_SWR` | `86400` | Stale-while-revalidate daftar (detik) |
+| `CACHE_SEARCH` | `86400` | TTL cache pencarian (detik) |
+| `CACHE_SEARCH_SWR` | `604800` | Stale-while-revalidate pencarian (detik) |
+| `CACHE_VIDEO` | `604800` | TTL cache detail video (detik) |
+| `CACHE_VIDEO_SWR` | `2592000` | Stale-while-revalidate detail video (detik) |
+| `KV_TTL_LIST` | `21600` | TTL daftar di KV (detik) |
+| `KV_TTL_SEARCH` | `86400` | TTL pencarian di KV (detik) |
+| `KV_TTL_VIDEO` | `604800` | TTL detail video di KV (detik) |
+| `PER_PAGE` | `20` | Item per halaman; dibatasi 5–30 |
+| `SEARCH_PER_PAGE` | `50` | Hasil pencarian per halaman; dibatasi 10–50 |
+| `MAX_SEARCH_VARIATIONS` | `6` | Jumlah variasi pencarian; maksimal 8 |
+| `API_TIMEOUT_MS` | `8000` | Timeout request ke API luar (ms) |
 
 Untuk development lokal, isi `.env` dan jalankan `npx wrangler pages dev .`:
 
@@ -79,11 +94,15 @@ Wrangler memuat `.env` untuk development lokal. Untuk production, atur kredensia
 
 | Path | Output |
 |------|--------|
-| `/` | HTML beranda |
-| `/f/{query}` | HTML search |
-| `/e/{id}` | HTML detail (URL lama `/e/{slug}-{id}` di-301) |
-| `/categories` | Daftar kategori (item → `/f/{slug}`)
-| `/f/{query}` | Search / kategori |
-| `/ajax/suggest?q=` | JSON |
-| `/api/stats` | JSON status |
-| `/sitemap.xml` | XML |
+| `/` atau `/page/{n}` | HTML beranda dan paginasi |
+| `/f/{query}` | HTML hasil pencarian/kategori |
+| `/search?q={query}` | URL pencarian lama; diarahkan ke `/f/{query}` |
+| `/e/{id}` | HTML detail; URL lama `/e/{slug}-{id}` diarahkan ke format ini |
+| `/categories` | Daftar kategori |
+| `/ajax/suggest?q={query}` | JSON saran pencarian |
+| `/api/latest?limit={n}` | JSON video terbaru (maksimal 30) |
+| `/api/stats` | JSON status worker dan cache |
+| `/sitemap.xml` | Index sitemap XML |
+| `/sitemap/pages.xml` | Sitemap halaman |
+| `/sitemap/searches.xml` | Sitemap pencarian |
+| `/tos`, `/disclaimer` | Halaman ketentuan layanan dan disclaimer |
