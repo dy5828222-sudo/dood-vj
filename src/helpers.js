@@ -205,12 +205,12 @@ export function getPaging(current, totalPages, baseUrl) {
 }
 
 /**
- * Mask external images via wsrv.nl (WebP, quality, responsive).
+ * Mask external images via wsrv.nl with responsive width and quality.
  * - Skips empty / data: / already-proxied URLs
- * - Default: webp, q=85, we (no upscale), sharp edge
+ * - Default quality: q=85
  *
  * @param {string} url
- * @param {{ w?: number, h?: number, q?: number, fit?: string }} [opts]
+ * @param {{ w?: number, q?: number }} [opts]
  */
 export function proxyImage(url, opts = {}) {
   if (!url || typeof url !== "string") return "";
@@ -230,35 +230,24 @@ export function proxyImage(url, opts = {}) {
   }
 
   const w = opts.w > 0 ? Math.min(Math.floor(opts.w), 1920) : 0;
-  const h = opts.h > 0 ? Math.min(Math.floor(opts.h), 1080) : 0;
   const q = opts.q > 0 ? Math.min(Math.max(Math.floor(opts.q), 40), 95) : 85;
-  const fit = opts.fit || "";
 
-  // wsrv.nl wants url without encoding issues; encodeURIComponent on full source
   const params = new URLSearchParams();
   params.set("url", src.replace(/^https?:\/\//i, ""));
   params.set("output", "webp");
   params.set("q", String(q));
-  params.set("n", "-1");
-  params.set("we", ""); // without enlargement
   if (w) params.set("w", String(w));
-  if (h) params.set("h", String(h));
-  if (fit) params.set("fit", fit);
-  // mild sharpen for clearer thumbs after resize
-  params.set("sharp", "1");
-
-  // URLSearchParams encodes empty we as "we=" which wsrv accepts as flag
   return `https://wsrv.nl/?${params.toString()}`;
 }
 
 /** Common sizes */
 export const IMG_CARD_MOBILE = { w: 320, q: 78 }; // mobile grid (~1x)
-export const IMG_CARD = { w: 480, q: 82 }; // default card / tablet
+export const IMG_CARD = { w: 480, q: 80 }; // default card / tablet
 export const IMG_CARD_2X = { w: 640, q: 80 }; // retina card
 export const IMG_COVER_MOBILE = { w: 640, q: 80 }; // mobile detail cover
 export const IMG_COVER = { w: 1280, q: 85 }; // desktop detail cover
 export const IMG_COVER_MID = { w: 960, q: 82 }; // tablet detail
-export const IMG_OG = { w: 1200, h: 630, q: 80, fit: "cover" }; // Open Graph
+export const IMG_OG = { w: 1200, q: 80 }; // Open Graph
 
 /**
  * Build srcset string from raw external URL (wsrv.nl variants).

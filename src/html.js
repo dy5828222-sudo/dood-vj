@@ -14,8 +14,6 @@ export function escapeHtml(str) {
 
 const PLACEHOLDER =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='225'%3E%3Crect fill='%2322222c' width='100%25' height='100%25'/%3E%3Cpath d='M180 95 L230 125 L180 155 Z' fill='%23555'/%3E%3C/svg%3E";
-const PIXEL =
-  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
 const FOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M2 6a2 2 0 012-2h5l2 2h7a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>`;
 
@@ -104,6 +102,11 @@ export function layout({
   const ogImage = image && String(image).trim() ? String(image).trim() : defaultImage;
   const safeOgImage = escapeHtml(ogImage);
   const isLargeImage = image && String(image).trim() && image !== defaultImage;
+  const ogImageType = /[?&]output=webp(?:&|$)|\.webp(?:[?#]|$)/i.test(ogImage)
+    ? "image/webp"
+    : /\.png(?:[?#]|$)/i.test(ogImage)
+      ? "image/png"
+      : "image/jpeg";
   const imgW = imageWidth > 0 ? imageWidth : isLargeImage ? 1280 : 180;
   const imgH = imageHeight > 0 ? imageHeight : isLargeImage ? 720 : 180;
   const twitterCard = isLargeImage ? "summary_large_image" : "summary";
@@ -205,11 +208,10 @@ export function layout({
   <meta property="og:site_name" content="${safeSite}">
   <meta property="og:url" content="${safeCanonical}">
   <meta property="og:image" content="${safeOgImage}">
-  <meta property="og:image:secure_url" content="${safeOgImage}">
   <meta property="og:image:width" content="${imgW}">
   <meta property="og:image:height" content="${imgH}">
   <meta property="og:image:alt" content="${safeTitle}">
-  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:type" content="${ogImageType}">
   ${publishedTime ? `<meta property="article:published_time" content="${escapeHtml(publishedTime)}">` : ""}
   ${modifiedTime ? `<meta property="article:modified_time" content="${escapeHtml(modifiedTime)}">` : ""}
   ${safeAuthor ? `<meta property="article:author" content="${safeAuthor}">` : ""}
@@ -363,43 +365,23 @@ export function layout({
 </html>`;
 }
 
-export function videoCard(v, opts = {}) {
+export function videoCard(v) {
   const title = escapeHtml(v.title || "Video");
-  const hasRawImageFields =
-    Object.prototype.hasOwnProperty.call(v, "single_img_raw") ||
-    Object.prototype.hasOwnProperty.call(v, "splash_img_raw");
-  const singleRaw = hasRawImageFields ? v.single_img_raw || "" : v.single_img || "";
-  const splashRaw = hasRawImageFields ? v.splash_img_raw || "" : v.splash_img || "";
   const thumbRaw = v.single_img || v.single_img_raw || v.splash_img || v.splash_img_raw || v.thumb || v.thumbnail || "";
-  const fallbackRaw = singleRaw && splashRaw && singleRaw !== splashRaw ? v.splash_img || splashRaw : "";
-  const thumb = escapeHtml(thumbRaw);
-  const fallbackThumb = escapeHtml(fallbackRaw);
+  const thumb = escapeHtml(thumbRaw || PLACEHOLDER);
   const srcset = escapeHtml(v.card_srcset || "");
   // Mobile-first sizes: ~half width on phone (2-col), ~1/3 tablet, fixed desktop tile
   const sizes = "(max-width: 480px) 50vw, (max-width: 768px) 33vw, 240px";
   const dur = escapeHtml(v.duration || "");
   const size = escapeHtml(v.size || "");
   const href = escapeHtml(v.permalink || v.short_permalink || "#");
-  const views = escapeHtml(v.views || "");
-  const eager = Boolean(opts.eager);
-  const onErr = `this.removeAttribute('data-src');this.removeAttribute('data-srcset');this.removeAttribute('srcset');if(this.dataset.fallback){this.src=this.dataset.fallback;this.removeAttribute('data-fallback')}else{this.onerror=null;this.src=${JSON.stringify(PLACEHOLDER)};this.classList.add('is-error')}`;
-  const fallbackAttr = fallbackThumb ? ` data-fallback="${fallbackThumb}"` : "";
-
-  let imgTag;
-  if (!thumb) {
-    imgTag = `<img src="${PLACEHOLDER}" alt="${title}" width="320" height="180" decoding="async" class="is-error">`;
-  } else if (eager) {
-    imgTag = `<img src="${thumb}"${srcset ? ` srcset="${srcset}" sizes="${sizes}"` : ""}${fallbackAttr} alt="${title}" width="320" height="180" fetchpriority="high" decoding="async" class="lazy-img is-loaded" onerror="${escapeHtml(onErr)}">`;
-  } else {
-    imgTag = `<img class="lazy-img" src="${PIXEL}" data-src="${thumb}"${srcset ? ` data-srcset="${srcset}" data-sizes="${sizes}"` : ""}${fallbackAttr} alt="${title}" width="320" height="180" loading="lazy" decoding="async" onerror="${escapeHtml(onErr)}">`;
-  }
-
-  const metaLeft = views ? `${views} views` : size || "";
-  const metaRight = dur || "";
+  const views = v.views != null && v.views !== "" ? `${escapeHtml(v.views)} views` : "";
+  const onErr = `this.onerror=null;this.removeAttribute('srcset');this.src=${JSON.stringify(PLACEHOLDER)}`;
+  const metaLeft = views || size || "";
 
   return `<article class="video-card">
   <a class="thumb-wrapper" href="${href}">
-    ${imgTag}
+    <img src="${thumb}"${srcset ? ` srcset="${srcset}" sizes="${sizes}"` : ""} alt="${title}" width="320" height="180" loading="lazy" decoding="async" onerror="${escapeHtml(onErr)}">
     <span class="play-badge" aria-hidden="true"><span class="material-symbols-outlined">play_circle</span></span>
     ${dur ? `<span class="badge-label right"><span class="material-symbols-outlined">schedule</span>${dur}</span>` : ""}
   </a>
@@ -407,7 +389,6 @@ export function videoCard(v, opts = {}) {
     <h2 class="card-title"><a href="${href}">${title}</a></h2>
     <div class="card-meta">
       <span>${metaLeft}</span>
-      <span>${metaRight && !dur ? metaRight : size && metaLeft !== size ? size : ""}</span>
     </div>
   </div>
 </article>`;
@@ -415,9 +396,7 @@ export function videoCard(v, opts = {}) {
 
 export function renderVideoGrid(items) {
   if (!items || !items.length) return "";
-  return `<div class="video-grid-5">${items
-    .map((v, i) => videoCard(v, { eager: i < 5 }))
-    .join("")}</div>`;
+  return `<div class="video-grid-5">${items.map(videoCard).join("")}</div>`;
 }
 
 export function renderPagination(links) {
