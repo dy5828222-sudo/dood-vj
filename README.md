@@ -50,8 +50,8 @@ Tanpa KV pun tetap jalan (hanya Edge Cache). Dengan KV, cache search/detail bert
 
 | Variable | Default | Keterangan |
 |----------|---------|------------|
-| `SITE_NAME` | Simontok 2026 | Nama situs |
-| `SITE_TAGLINE` | `Streaming Video Viral Indo TikTok Download Link` | Tagline situs |
+| `SITE_NAME` | wajib diisi | Nama situs |
+| `SITE_TAGLINE` | wajib diisi | Tagline situs |
 | `LANGUAGE` | `id` | Bahasa untuk metadata dan saran pencarian |
 | `SITE_URL` | (kosong) | URL kanonis; jika kosong, gunakan `BASE_URL` |
 | `BASE_URL` | (kosong) | Fallback URL kanonis |
@@ -73,14 +73,19 @@ Tanpa KV pun tetap jalan (hanya Edge Cache). Dengan KV, cache search/detail bert
 | `MAX_SEARCH_VARIATIONS` | `6` | Jumlah variasi pencarian; maksimal 8 |
 | `API_TIMEOUT_MS` | `8000` | Timeout request ke API luar (ms) |
 
-Untuk development lokal, isi `.env` dan jalankan `npx wrangler pages dev .`:
+Atur `SITE_NAME` dan `SITE_TAGLINE` di `.env` untuk development lokal, lalu jalankan `npx wrangler pages dev .`:
 
 ```env
+SITE_NAME=Nama situs
+SITE_TAGLINE=Tagline situs
+SITE_URL=https://example.com
+# Alternatif SITE_URL jika memakai nama variabel ini:
+# BASE_URL=https://example.com
 DOOD_API_KEY=isi_kredensial_dood
 LULU_API_KEY=isi_kredensial_lulu
 ```
 
-Wrangler memuat `.env` untuk development lokal. Untuk production, atur kredensial sebagai **Secrets** di Cloudflare Pages → Settings → Variables and Secrets; file `.env` lokal tidak dikirim sebagai konfigurasi production. Jangan commit file `.env`.
+Wrangler memuat `.env` untuk development lokal. `SITE_URL` dipakai lebih dahulu; `BASE_URL` menjadi fallback. Untuk production, atur nilai konfigurasi di Cloudflare Pages → Settings → Variables and Secrets, dan simpan API key sebagai **Secrets**. File `.env` lokal tidak mengatur production. Jangan commit file `.env`.
 
 ## Tips Free Tier
 

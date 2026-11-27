@@ -1,10 +1,10 @@
 export function getConfig(env) {
   return {
-    site_name: env.SITE_NAME || "Simontok 2026",
-    site_tagline: env.SITE_TAGLINE || "Streaming Video Viral Indo TikTok Download Link",
+    site_name: env.SITE_NAME || "",
+    site_tagline: env.SITE_TAGLINE || "",
     language: env.LANGUAGE || "id",
     // Canonical site origin (opsional). Isi di Codespaces/prod agar permalink tidak localhost.
-    // Contoh: SITE_URL=https://stunning-orbit-6v594r4qpwqf7pv-8788.app.github.dev
+    // Contoh: SITE_URL=https://example.com
     site_url: (env.SITE_URL || env.BASE_URL || "").replace(/\/+$/, ""),
     base_url: (env.SITE_URL || env.BASE_URL || "").replace(/\/+$/, ""),
 
