@@ -58,6 +58,15 @@ Tanpa KV pun tetap jalan (hanya Edge Cache). Dengan KV, cache search/detail bert
 | `MAX_SEARCH_VARIATIONS` | 3 | Max parallel search query |
 | `API_TIMEOUT_MS` | 8000 | Timeout fetch API luar |
 
+Untuk development lokal, isi `.env` dan jalankan `npx wrangler pages dev .`:
+
+```env
+DOOD_API_KEY=isi_kredensial_dood
+LULU_API_KEY=isi_kredensial_lulu
+```
+
+Wrangler memuat `.env` untuk development lokal. Untuk production, atur kredensial sebagai **Secrets** di Cloudflare Pages → Settings → Variables and Secrets; file `.env` lokal tidak dikirim sebagai konfigurasi production. Jangan commit file `.env`.
+
 ## Tips Free Tier
 
 1. Aktifkan **Bot Fight Mode** (Security → Bots) — gratis
