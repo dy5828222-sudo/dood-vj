@@ -40,6 +40,50 @@ async function httpGet(url, timeoutMs = 8000) {
   }
 }
 
+function isSuccessfulApiStatus(status) {
+  if (status === undefined || status === null || status === "") return true;
+  const numericStatus = Number(status);
+  if (Number.isFinite(numericStatus)) return numericStatus === 200;
+  return ["ok", "active", "success"].includes(String(status).trim().toLowerCase());
+}
+
+function getInfoRecord(data, fileId) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  if (!isSuccessfulApiStatus(data.status)) return null;
+
+  const result = data.result;
+  const records = (Array.isArray(result) ? result : [result]).filter(
+    (record) => record && typeof record === "object" && !Array.isArray(record)
+  );
+  const recordId = (record) =>
+    String(record.file_code || record.filecode || record.id || "").trim();
+  const recordsWithIds = records.filter((item) => recordId(item));
+  const record =
+    records.find((item) => recordId(item) === fileId) ||
+    (recordsWithIds.length === 0 ? records[0] : null);
+
+  if (!record || !isSuccessfulApiStatus(record.status)) return null;
+  const returnedId = recordId(record);
+  if (returnedId && returnedId !== fileId) return null;
+  return record;
+}
+
+function firstString(...values) {
+  return values.find((value) => typeof value === "string" && value.trim())?.trim() || "";
+}
+
+function nonNegativeInteger(value) {
+  if (typeof value !== "number" && typeof value !== "string") return 0;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? Math.floor(number) : 0;
+}
+
+function stringValue(value, fallback = "") {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return fallback;
+}
+
 /**
  * Relevance ringan — hindari Levenshtein di setiap kata (hemat CPU free tier).
  * Prioritas: full phrase > semua kata match > partial match > prefix.
@@ -360,22 +404,27 @@ export class AGC {
 
   async getVideo(id = "") {
     const fid = String(id || "").trim();
-    if (!fid) return null;
-    // Coba Dood dulu; Lulu hanya jika gagal (hemat 1 subrequest)
+    if (!/^[a-zA-Z0-9_-]{3,64}$/.test(fid)) return null;
     const dood = await this._fetchDood(fid);
     if (dood) return dood;
     return this._fetchLulu(fid);
   }
 
   async _fetchDood(fid) {
-    const url = `https://doodapi.co/api/file/info?key=${this.doodKey}&file_code=${encodeURIComponent(fid)}`;
+    if (!this.doodKey) return null;
+    const params = new URLSearchParams({ key: this.doodKey, file_code: fid });
+    const url = `https://doodapi.co/api/file/info?${params}`;
     const data = await httpGet(url, this.timeout);
-    if (!data || !data.result) return null;
-    const item = Array.isArray(data.result) ? data.result[0] || {} : data.result;
-    const rawTitle = String(item.title || item.file_title || "").trim();
+    const item = getInfoRecord(data, fid);
+    if (!item) return null;
+    const rawTitle = firstString(item.title, item.file_title);
+    if (!rawTitle) return null;
     const title = this.cleanTitle(rawTitle);
-    if (!title) return null;
-    const length = parseInt(item.length || item.file_length || 0, 10);
+    const length = nonNegativeInteger(item.length ?? item.file_length);
+    const size = nonNegativeInteger(item.size ?? item.file_size);
+    const views = item.views ?? item.file_views;
+    const singleImg = firstString(item.single_img);
+    const splashImg = firstString(item.splash_img, singleImg);
     return {
       id: fid,
       file_code: fid,
@@ -383,11 +432,11 @@ export class AGC {
       raw_title: rawTitle,
       duration: formatDuration(length),
       length: formatDuration(length),
-      size: item.size ? formatBytes(parseInt(item.size, 10)) : "",
-      views: String(item.views || "0"),
-      thumb: item.single_img || item.splash_img || "",
-      single_img: item.single_img || "",
-      splash_img: item.splash_img || item.single_img || "",
+      size: size ? formatBytes(size) : "",
+      views: stringValue(views, "0"),
+      thumb: singleImg || splashImg,
+      single_img: singleImg,
+      splash_img: splashImg,
       embed: `https://dodl.pages.dev/${fid}`,
       protected_embed: `https://dodl.pages.dev/${fid}`,
       download: `https://doodstream.com/d/${fid}`,
@@ -401,16 +450,20 @@ export class AGC {
   }
 
   async _fetchLulu(fid) {
-    const url = `https://api.lulustream.com/api/file/info?key=${this.luluKey}&file_code=${encodeURIComponent(fid)}`;
+    if (!this.luluKey) return null;
+    const params = new URLSearchParams({ key: this.luluKey, file_code: fid });
+    const url = `https://api.lulustream.com/api/file/info?${params}`;
     const data = await httpGet(url, this.timeout);
-    if (!data || !data.result) return null;
-    const item = Array.isArray(data.result) ? data.result[0] || {} : data.result;
-    const status = parseInt(item.status || 0, 10);
-    if (status === 400 || status === 404) return null;
-    const rawTitle = String(item.file_title || "").trim();
+    const item = getInfoRecord(data, fid);
+    if (!item) return null;
+    const rawTitle = firstString(item.file_title, item.title);
+    if (!rawTitle) return null;
     const title = this.cleanTitle(rawTitle);
-    if (!title) return null;
-    const length = parseInt(item.file_length || 0, 10);
+    const length = nonNegativeInteger(item.file_length ?? item.length);
+    const size = nonNegativeInteger(item.file_size ?? item.size);
+    const views = item.file_views ?? item.views;
+    const playerImg = firstString(item.player_img, item.single_img);
+    const splashImg = firstString(item.splash_img, playerImg);
     return {
       id: fid,
       file_code: fid,
@@ -418,11 +471,11 @@ export class AGC {
       raw_title: rawTitle,
       duration: formatDuration(length),
       length: formatDuration(length),
-      size: item.file_size ? formatBytes(parseInt(item.file_size, 10)) : "",
-      views: String(item.file_views || "0"),
-      thumb: item.player_img || item.splash_img || "",
-      single_img: item.player_img || "",
-      splash_img: item.splash_img || item.player_img || "",
+      size: size ? formatBytes(size) : "",
+      views: stringValue(views, "0"),
+      thumb: playerImg || splashImg,
+      single_img: playerImg,
+      splash_img: splashImg,
       embed: `https://luvluv.pages.dev/${fid}`,
       protected_embed: `https://luvluv.pages.dev/${fid}`,
       download: `https://lulustream.com/d/${fid}`,
