@@ -290,6 +290,7 @@ export function enrichVideo(v, baseUrl) {
   const rawSingle = item.single_img || "";
   const rawThumb = item.thumb || item.thumbnail || "";
   const rawBest = rawSplash || rawSingle || rawThumb || "";
+  const rawCard = rawSingle || rawSplash || rawThumb || "";
 
   item.splash_img_raw = rawSplash;
   item.single_img_raw = rawSingle;
@@ -302,7 +303,7 @@ export function enrichVideo(v, baseUrl) {
   item.thumb = proxyImage(rawThumb, IMG_CARD) || item.single_img || item.splash_img || "";
 
   // Prebuilt srcsets (optional consumers)
-  item.card_srcset = proxySrcset(rawBest, [320, 480, 640], 80);
+  item.card_srcset = proxySrcset(rawCard, [320, 480, 640], 80);
   item.cover_srcset = proxySrcset(rawBest, [640, 960, 1280], 82);
 
   return item;

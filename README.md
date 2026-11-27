@@ -13,6 +13,7 @@ Versi HTML + optimasi trafik: Edge Cache, Stale-While-Revalidate, KV opsional, b
 | **Search hemat** | Hingga 8 variasi query dijalankan paralel (default 6) |
 | **Fallback provider** | Detail video mencoba DoodStream, lalu LuluStream jika tidak ditemukan |
 | **CPU hemat** | Relevance tanpa Levenshtein berat |
+| **Inline CSS** | CSS utama dimuat langsung di `<head>` untuk mengurangi satu request |
 | **TTL panjang** | List 6j, Search 24j, Video 7 hari (+ SWR lebih lama) |
 
 ## Struktur
@@ -59,6 +60,9 @@ Tanpa KV pun tetap jalan (hanya Edge Cache). Dengan KV, cache search/detail bert
 | `ALLOWED_ORIGIN` | `*` | Origin CORS yang diizinkan |
 | `DOOD_API_KEY` | (kosong) | API DoodStream — simpan sebagai secret |
 | `LULU_API_KEY` | (kosong) | API LuluStream — simpan sebagai secret |
+| `ADS_HEADER` | (kosong) | HTML/script iklan di slot header |
+| `ADS_FLOATING` | (kosong) | HTML/script iklan di slot floating |
+| `ADS_ARTICLE` | (kosong) | HTML/script iklan di slot artikel/katalog |
 | `CACHE_LIST` | `21600` | TTL cache daftar (detik) |
 | `CACHE_LIST_SWR` | `86400` | Stale-while-revalidate daftar (detik) |
 | `CACHE_SEARCH` | `86400` | TTL cache pencarian (detik) |
@@ -85,9 +89,12 @@ SITE_URL=https://example.com
 # BASE_URL=https://example.com
 DOOD_API_KEY=isi_kredensial_dood
 LULU_API_KEY=isi_kredensial_lulu
+ADS_HEADER=
+ADS_FLOATING=
+ADS_ARTICLE=
 ```
 
-Wrangler memuat `.env` untuk development lokal. `SITE_URL` dipakai lebih dahulu; `BASE_URL` menjadi fallback. Untuk production, atur nilai konfigurasi di Cloudflare Pages → Settings → Variables and Secrets, dan simpan API key sebagai **Secrets**. File `.env` lokal tidak mengatur production. Jangan commit file `.env`.
+Wrangler memuat `.env` untuk development lokal. Isi variabel `ADS_*` dengan snippet HTML/script tepercaya dari penyedia iklan; snippet dirender sebagai HTML, jadi jangan isi dengan input pengguna. `SITE_URL` dipakai lebih dahulu; `BASE_URL` menjadi fallback. Untuk production, atur nilai konfigurasi di Cloudflare Pages → Settings → Variables and Secrets, dan simpan API key sebagai **Secrets**. File `.env` lokal tidak mengatur production. Jangan commit file `.env`.
 
 ## Tips Free Tier
 

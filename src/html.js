@@ -1,7 +1,7 @@
 /**
  * Vidpro Layout (presisi) — templates for AGC Cloudflare Pages
  */
-import { CSS_PATH, JS_PATH } from "./assets.js";
+import { APP_CSS, JS_PATH } from "./assets.js";
 
 export function escapeHtml(str) {
   return String(str ?? "")
@@ -21,18 +21,19 @@ const FOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" 
 
 const PLAY_SVG = `<svg class="custom-play-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="76" height="76"><circle cx="256" cy="256" r="248" fill="#000" opacity=".55"/><path d="M195 131 L372 238 Q395 256 372 274 L195 381 Q160 400 160 360 V152 Q160 112 195 131Z" fill="#fff"/></svg>`;
 
-/** Placeholder slot iklan — ganti isi .ad-slot-inner dengan kode AdSense/banner */
-function adSlot(variant = "in-article", label = "Advertisement") {
+/** Render trusted ad markup configured by the site operator; keep placeholder when unset. */
+function adSlot(variant = "in-article", label = "Advertisement", content = "") {
   const cls =
     variant === "header"
       ? "ad-slot ad-slot--header"
       : variant === "floating"
         ? "ad-slot ad-slot--floating"
         : "ad-slot ad-slot--in-article";
+  const inner = String(content || "").trim() || `<!-- Pasang kode iklan di sini (${escapeHtml(variant)}) -->`;
   return `<div class="${cls}" data-ad="${escapeHtml(variant)}" aria-label="Advertisement">
   <div class="ad-slot-inner">
     <span class="ad-slot-label">${escapeHtml(label)}</span>
-    <span><!-- Pasang kode iklan di sini (${escapeHtml(variant)}) --></span>
+    ${inner}
   </div>
 </div>`;
 }
@@ -83,6 +84,7 @@ export function layout({
   publishedTime = "",
   modifiedTime = "",
   author = "",
+  ads = {},
 }) {
   const safeTitle = escapeHtml(title || siteName);
   const safeDesc = escapeHtml(description || "");
@@ -221,9 +223,7 @@ export function layout({
   <meta name="twitter:site" content="@${escapeHtml((siteName || "site").replace(/\s+/g, "").toLowerCase())}">
 
   <!-- Critical CSS (hashed, long-cache) — non-blocking -->
-  <link rel="preload" href="${CSS_PATH}" as="style">
-  <link rel="stylesheet" href="${CSS_PATH}" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="${CSS_PATH}"></noscript>
+  <style>${APP_CSS}</style>
 
   <!-- Image CDN + icon font (async, tidak blokir first paint) -->
   <link rel="dns-prefetch" href="https://wsrv.nl">
@@ -278,7 +278,7 @@ export function layout({
   </header>
 
   <div class="ad-header-wrap">
-    ${adSlot("header", "Ads — Header")}
+    ${adSlot("header", "Ads — Header", ads.header)}
   </div>
 
   <div class="mobile-overlay" id="mobile-overlay" onclick="toggleDrawer(false)"></div>
@@ -350,7 +350,7 @@ export function layout({
     <div class="ad-floating-backdrop" id="ad-floating-backdrop"></div>
     <div class="ad-floating-box">
       <button type="button" class="ad-floating-close" id="ad-floating-close" aria-label="Tutup iklan">&times;</button>
-      ${adSlot("floating", "Ads — Floating")}
+      ${adSlot("floating", "Ads — Floating", ads.floating)}
     </div>
   </div>
 
@@ -365,9 +365,15 @@ export function layout({
 
 export function videoCard(v, opts = {}) {
   const title = escapeHtml(v.title || "Video");
-  // Prefer card-sized single_img; fallback splash/thumb (may already be proxied via enrichVideo)
-  const thumbRaw = v.single_img || v.splash_img || v.thumb || v.thumbnail || "";
+  const hasRawImageFields =
+    Object.prototype.hasOwnProperty.call(v, "single_img_raw") ||
+    Object.prototype.hasOwnProperty.call(v, "splash_img_raw");
+  const singleRaw = hasRawImageFields ? v.single_img_raw || "" : v.single_img || "";
+  const splashRaw = hasRawImageFields ? v.splash_img_raw || "" : v.splash_img || "";
+  const thumbRaw = v.single_img || v.single_img_raw || v.splash_img || v.splash_img_raw || v.thumb || v.thumbnail || "";
+  const fallbackRaw = singleRaw && splashRaw && singleRaw !== splashRaw ? v.splash_img || splashRaw : "";
   const thumb = escapeHtml(thumbRaw);
+  const fallbackThumb = escapeHtml(fallbackRaw);
   const srcset = escapeHtml(v.card_srcset || "");
   // Mobile-first sizes: ~half width on phone (2-col), ~1/3 tablet, fixed desktop tile
   const sizes = "(max-width: 480px) 50vw, (max-width: 768px) 33vw, 240px";
@@ -376,15 +382,16 @@ export function videoCard(v, opts = {}) {
   const href = escapeHtml(v.permalink || v.short_permalink || "#");
   const views = escapeHtml(v.views || "");
   const eager = Boolean(opts.eager);
-  const onErr = `this.onerror=null;this.removeAttribute('data-src');this.removeAttribute('data-srcset');this.src='${PLACEHOLDER}';this.removeAttribute('srcset');this.classList.add('is-error')`;
+  const onErr = `this.removeAttribute('data-src');this.removeAttribute('data-srcset');this.removeAttribute('srcset');if(this.dataset.fallback){this.src=this.dataset.fallback;this.removeAttribute('data-fallback')}else{this.onerror=null;this.src=${JSON.stringify(PLACEHOLDER)};this.classList.add('is-error')}`;
+  const fallbackAttr = fallbackThumb ? ` data-fallback="${fallbackThumb}"` : "";
 
   let imgTag;
   if (!thumb) {
     imgTag = `<img src="${PLACEHOLDER}" alt="${title}" width="320" height="180" decoding="async" class="is-error">`;
   } else if (eager) {
-    imgTag = `<img src="${thumb}"${srcset ? ` srcset="${srcset}" sizes="${sizes}"` : ""} alt="${title}" width="320" height="180" fetchpriority="high" decoding="async" class="lazy-img is-loaded" onerror="${onErr}">`;
+    imgTag = `<img src="${thumb}"${srcset ? ` srcset="${srcset}" sizes="${sizes}"` : ""}${fallbackAttr} alt="${title}" width="320" height="180" fetchpriority="high" decoding="async" class="lazy-img is-loaded" onerror="${escapeHtml(onErr)}">`;
   } else {
-    imgTag = `<img class="lazy-img" src="${PIXEL}" data-src="${thumb}"${srcset ? ` data-srcset="${srcset}" data-sizes="${sizes}"` : ""} alt="${title}" width="320" height="180" loading="lazy" decoding="async" onerror="${onErr}">`;
+    imgTag = `<img class="lazy-img" src="${PIXEL}" data-src="${thumb}"${srcset ? ` data-srcset="${srcset}" data-sizes="${sizes}"` : ""}${fallbackAttr} alt="${title}" width="320" height="180" loading="lazy" decoding="async" onerror="${escapeHtml(onErr)}">`;
   }
 
   const metaLeft = views ? `${views} views` : size || "";
@@ -451,16 +458,16 @@ export function emptyState(title, message) {
 </div>`;
 }
 
-export function catalogSection({ title, meta, pills, grid, pagination }) {
+export function catalogSection({ title, meta, pills, grid, pagination, ads = {} }) {
   return `<section class="main-section" aria-label="${escapeHtml(title || "Katalog video")}">
   <div class="container">
     ${pills || ""}
     ${pageHead(title, meta)}
-    ${adSlot("in-article", "Ads — In Article")}
+    ${adSlot("in-article", "Ads — In Article", ads.article)}
     <div class="video-catalog" role="list">
       ${grid || ""}
     </div>
-    ${adSlot("in-article", "Ads — In Article")}
+    ${adSlot("in-article", "Ads — In Article", ads.article)}
     ${pagination || ""}
   </div>
 </section>`;
@@ -480,6 +487,7 @@ export function detailSection({
   synopsis,
   keywords,
   relatedGrid,
+  ads = {},
 }) {
   const safeTitle = escapeHtml(title);
   // Prioritas thumbnail: splash_img (diminta user) → thumb → kosong
@@ -534,7 +542,7 @@ export function detailSection({
     <p class="detail-meta-line">${metaLine || ""}</p>
     ${safeCover ? `<meta itemprop="thumbnailUrl" content="${safeCover}">` : ""}
     ${safeEmbed ? `<meta itemprop="embedUrl" content="${safeEmbed}">` : ""}
-    ${adSlot("in-article", "Ads — In Article")}
+    ${adSlot("in-article", "Ads — In Article", ads.article)}
     ${synopsis
       ? `<div class="synopsis-box">
       <h2 class="synopsis-title">Sinopsis &amp; Deskripsi Video</h2>
@@ -542,7 +550,7 @@ export function detailSection({
       ${kw ? `<div class="synopsis-keywords"><span class="synopsis-keywords-label">Kata Kunci:</span> ${kw}</div>` : ""}
     </div>`
       : ""}
-    ${adSlot("in-article", "Ads — In Article")}
+    ${adSlot("in-article", "Ads — In Article", ads.article)}
     ${relatedGrid
       ? `<section class="related-section" aria-label="Video terkait">
            <div class="section-header-wrap" style="margin-top:28px"><h2 class="section-header">Video Terkait</h2></div>

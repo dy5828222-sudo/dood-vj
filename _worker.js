@@ -240,6 +240,7 @@ function errorPage(cfg, base, title, message, status = 500) {
       tagline: cfg.site_tagline,
       body: emptyState(title, message),
       base,
+      ads: cfg.ads,
     }),
     status,
     0,
@@ -574,6 +575,7 @@ ${urls}
           pills: renderCategories(defaultCats, ""),
           grid: enriched.length ? renderVideoGrid(enriched) : emptyState("Belum ada video", "Coba lagi nanti."),
           pagination: renderPagination(links),
+          ads: cfg.ads,
         });
 
         const homeJsonLd = page === 1
@@ -607,6 +609,7 @@ ${urls}
             tagline: cfg.site_tagline,
             body,
             base,
+            ads: cfg.ads,
             keywords: ["video viral", "tiktok indo", "streaming video", "download mp4", cfg.site_name],
             jsonLd: homeJsonLd,
             author: cfg.site_name,
@@ -718,6 +721,7 @@ ${urls}
           pills: "",
           grid: items.length ? renderVideoGrid(items) : emptyState("Tidak ada hasil", "Coba kata kunci lain."),
           pagination: renderPagination(links),
+          ads: cfg.ads,
         });
 
         const searchJsonLd =
@@ -754,6 +758,7 @@ ${urls}
             tagline: cfg.site_tagline,
             body,
             base,
+            ads: cfg.ads,
             keywords: [rawQuery, "video viral", "nonton", "download", cfg.site_name],
             jsonLd: searchJsonLd,
             author: cfg.site_name,
@@ -973,6 +978,7 @@ ${urls}
           synopsis: `<p style="margin:0 0 8px 0">${escapeHtml(metaDesc)}</p>`,
           keywords: kwList,
           relatedGrid: related.length ? related.map((v) => videoCard(v)).join("") : "",
+          ads: cfg.ads,
         });
 
         response = htmlResponse(
@@ -985,6 +991,7 @@ ${urls}
             tagline: cfg.site_tagline,
             body,
             base,
+            ads: cfg.ads,
             image: ogImage,
             imageWidth: 1200,
             imageHeight: 630,
@@ -1069,6 +1076,7 @@ ${urls}
               ? emptyState("Tidak ada video", "Coba kategori lain.")
               : "",
           pagination: renderPagination(links),
+          ads: cfg.ads,
         });
 
         const catCanonical = slug ? categoryPermalink(name, base) : `${base}/categories`;
@@ -1086,6 +1094,7 @@ ${urls}
             tagline: cfg.site_tagline,
             body,
             base,
+            ads: cfg.ads,
             keywords: [name, "video viral", "kategori", cfg.site_name],
             author: cfg.site_name,
             activeNav: "categories",
@@ -1144,6 +1153,7 @@ ${urls}
             tagline: cfg.site_tagline,
             body,
             base,
+            ads: cfg.ads,
           }),
           200,
           maxAge,
@@ -1169,6 +1179,7 @@ ${urls}
             tagline: cfg.site_tagline,
             body,
             base,
+            ads: cfg.ads,
           }),
           200,
           maxAge,

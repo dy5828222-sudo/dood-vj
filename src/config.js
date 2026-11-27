@@ -29,6 +29,11 @@ export function getConfig(env) {
     allowed_origin: env.ALLOWED_ORIGIN || "*",
     dood_api_key: env.DOOD_API_KEY || "",
     lulu_api_key: env.LULU_API_KEY || "",
+    ads: {
+      header: env.ADS_HEADER || "",
+      floating: env.ADS_FLOATING || "",
+      article: env.ADS_ARTICLE || "",
+    },
 
     // TTL edge cache (detik) — lebih panjang untuk free tier
     // max-age = fresh period, swr = stale-while-revalidate
